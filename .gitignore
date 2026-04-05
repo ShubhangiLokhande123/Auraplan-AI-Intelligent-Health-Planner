@@ -1,0 +1,26 @@
+# Flutter build output
+auraplan_flutter/build/
+auraplan_flutter/.dart_tool/
+auraplan_flutter/.flutter-plugins
+auraplan_flutter/.flutter-plugins-dependencies
+auraplan_flutter/.packages
+auraplan_flutter/pubspec.lock
+
+# Android build output
+auraplan_flutter/android/.gradle/
+auraplan_flutter/android/app/build/
+auraplan_flutter/android/local.properties
+auraplan_flutter/android/key.properties
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Inner git repos — ignore nested .git dirs to prevent submodule detection
+auraplan_flutter/assets/.git
+auraplan_flutter/assets/.git/**
