@@ -796,19 +796,13 @@
         This helps our AI calibrate circadian rhythms and recovery recommendations perfectly.
       </p>
 
-      <!-- Age Selector -->
-      <div class="flex items-end justify-center gap-5 mb-8">
-        <span class="text-2xl text-on-surface-variant opacity-25 font-headline font-bold select-none">24</span>
-        <span class="text-3xl text-on-surface-variant opacity-40 font-headline font-bold select-none">25</span>
-        <div class="flex flex-col items-center">
-          <div class="w-20 h-20 rounded-md bg-surface-container-lowest flex items-center justify-center shadow-lg border border-primary/10 mb-2">
-            <input id="input-age" type="number" value="26" min="13" max="99"
-              class="w-full text-center bg-transparent border-none outline-none font-headline font-extrabold text-4xl text-primary focus:ring-0"/>
-          </div>
-          <div class="w-2 h-2 rounded-full bg-primary"></div>
-        </div>
-        <span class="text-3xl text-on-surface-variant opacity-40 font-headline font-bold select-none">27</span>
-        <span class="text-2xl text-on-surface-variant opacity-25 font-headline font-bold select-none">28</span>
+      <!-- Age Drum-Roll Picker -->
+      <input id="input-age" type="hidden" value="26"/>
+      <div id="age-drum" class="flex items-end justify-center gap-5 mb-8 select-none"
+           style="cursor:grab; touch-action:pan-y; user-select:none;"
+           onmousedown="ageDrumMouseDown(event)"
+           ontouchstart="ageDrumTouchStart(event)">
+        <!-- populated by renderAgeDrum() -->
       </div>
 
       <!-- AI Insights mini -->
@@ -3662,6 +3656,81 @@ async function triggerDailySummary(manual = false) {
   showToast('Daily summary ready!', 'info');
 }
 
+// ── Age Drum-Roll Picker ─────────────────────────
+const AGE_MIN = 13, AGE_MAX = 99;
+let _ageSelected = 26;
+
+function renderAgeDrum() {
+  const drum = document.getElementById('age-drum');
+  if (!drum) return;
+  const a = _ageSelected;
+  const slots = [a - 2, a - 1, a, a + 1, a + 2];
+  drum.innerHTML = slots.map((v, i) => {
+    const isCenter = i === 2;
+    const phantom = v < AGE_MIN || v > AGE_MAX;
+    if (phantom) {
+      const w = [32, 40, 80, 40, 32][i];
+      return `<span style="width:${w}px;flex-shrink:0;opacity:0;" aria-hidden="true">&nbsp;</span>`;
+    }
+    if (isCenter) {
+      return `<div class="flex flex-col items-center" data-age="${v}">`
+        + `<div class="w-20 h-20 rounded-xl bg-surface-container-lowest flex items-center justify-center shadow-lg border border-primary/10 mb-2">`
+        + `<span class="font-headline font-extrabold text-4xl text-primary">${v}</span>`
+        + `</div>`
+        + `<div class="w-2 h-2 rounded-full bg-primary"></div>`
+        + `</div>`;
+    }
+    const cls = i < 2
+      ? (i === 0 ? 'text-2xl opacity-25' : 'text-3xl opacity-40')
+      : (i === 4 ? 'text-2xl opacity-25' : 'text-3xl opacity-40');
+    return `<span class="${cls} font-headline font-bold text-on-surface-variant cursor-pointer transition-all active:scale-90 hover:opacity-70"
+      data-age="${v}" onclick="ageDrumSelect(${v})">${v}</span>`;
+  }).join('');
+  const inp = document.getElementById('input-age');
+  if (inp) inp.value = a;
+  state.userAge = a;
+}
+
+function ageDrumSelect(age) {
+  _ageSelected = Math.max(AGE_MIN, Math.min(AGE_MAX, Math.round(age)));
+  renderAgeDrum();
+}
+
+function ageDrumMouseDown(e) {
+  if (e.button !== 0) return;
+  const startX = e.clientX;
+  let delta = 0;
+  const drum = document.getElementById('age-drum');
+  drum.style.cursor = 'grabbing';
+  const onMove = (ev) => { delta = ev.clientX - startX; };
+  const onUp = () => {
+    drum.style.cursor = 'grab';
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    const steps = Math.round(-delta / 55);
+    if (steps !== 0) ageDrumSelect(_ageSelected + steps);
+  };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+function ageDrumTouchStart(e) {
+  const startX = e.touches[0].clientX;
+  let delta = 0;
+  const onMove = (ev) => {
+    ev.preventDefault();
+    delta = ev.touches[0].clientX - startX;
+  };
+  const onEnd = () => {
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onEnd);
+    const steps = Math.round(-delta / 55);
+    if (steps !== 0) ageDrumSelect(_ageSelected + steps);
+  };
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('touchend', onEnd);
+}
+
 // ── Date selector (schedule) ───────────────────
 function selectDate(el) {
   el.closest('.flex').querySelectorAll('.date-item').forEach(d => d.classList.remove('active'));
@@ -3670,6 +3739,8 @@ function selectDate(el) {
 
 // ── Nav active styling on init ─────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  // Init age drum-roll picker
+  renderAgeDrum();
   // Init active styling for all bottom nav bars
   ['home','schedule','hydration','profile'].forEach(t => setNavActiveButton(t));
   updateWaterUI();
@@ -3728,6 +3799,9 @@ window.navigate = function(targetId, isBack = false) {
       renderCalendar();
       renderTasks('weekday');
       renderTasks('weekend');
+    }
+    if (targetId === 'screen-onboarding-age') {
+      renderAgeDrum();
     }
   }, 320);
 };
