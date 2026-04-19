@@ -2342,11 +2342,15 @@ function renderCalendar() {
   const today = new Date();
   const grid = document.getElementById('cal-grid');
   grid.innerHTML = '';
+
+  // ⚡ Bolt Optimization: Use DocumentFragment to batch DOM insertions
+  // This minimizes reflows and repaints by appending to the live DOM only once.
+  const fragment = document.createDocumentFragment();
   // Blank cells before first day
   for (let i = 0; i < firstDay; i++) {
     const blank = document.createElement('div');
     blank.className = 'h-8';
-    grid.appendChild(blank);
+    fragment.appendChild(blank);
   }
   for (let d = 1; d <= daysInMonth; d++) {
     const btn = document.createElement('button');
@@ -2363,8 +2367,9 @@ function renderCalendar() {
         isWeekend ? 'text-tertiary-dim font-semibold' : 'text-on-surface hover:bg-primary/10',
     ].join(' ');
     btn.onclick = () => selectCalDate(calYear, calMonth, d);
-    grid.appendChild(btn);
+    fragment.appendChild(btn);
   }
+  grid.appendChild(fragment);
 }
 
 function selectCalDate(y, m, d) {
@@ -2417,6 +2422,10 @@ function renderTasks(type) {
   list.innerHTML = '';
   if (!tasks.length) { empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
+
+  // ⚡ Bolt Optimization: Use DocumentFragment to batch DOM insertions
+  // This minimizes reflows and repaints by appending to the live DOM only once.
+  const fragment = document.createDocumentFragment();
   tasks.forEach(task => {
     const card = document.createElement('div');
     if (task.done) card.classList.add('task-done-card');
@@ -2442,8 +2451,9 @@ function renderTasks(type) {
           <span class="material-symbols-outlined text-base">delete</span>
         </button>
       </div>`;
-    list.appendChild(card);
+    fragment.appendChild(card);
   });
+  list.appendChild(fragment);
 }
 
 function escHtml(str) {
